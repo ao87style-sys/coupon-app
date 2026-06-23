@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>❤️ プレゼント券アプリ</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --dad-color: #2979ff;
+    --dad-light: #e3f2fd;
+    --mom-color: #e91e8c;
+    --mom-light: #fce4f0;
+    --yellow: #ffd600;
+    --green: #00c853;
+    --radius: 20px;
+  }
+
+  body {
+    font-family: 'Helvetica Neue', 'Hiragino Kaku Gothic ProN', Arial, sans-serif;
+    background: #fff9f0;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ===== ニュースティッカー ===== */
+  .news-bar {
+    background: linear-gradient(90deg, #ff6f00, #ff8f00, #ffa000);
+    color: white;
+    padding: 10px 0;
+    overflow: hidden;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .news-track {
+    display: inline-block;
+    animation: ticker 28s linear infinite;
+  }
+  .news-track span {
+    margin: 0 60px;
+    font-size: 15px;
+    font-weight: bold;
+  }
+  .news-track span::before { content: "📢 "; }
+  @keyframes ticker {
+    0%   { transform: translateX(100vw); }
+    100% { transform: translateX(-100%); }
+  }
+
+  /* ===== ヘッダー ===== */
+  .page-header {
+    text-align: center;
+    padding: 28px 16px 12px;
+  }
+  .page-header .title {
+    font-size: 26px;
+    font-weight: 900;
+    color: #333;
+  }
+  .page-header .subtitle {
+    font-size: 14px;
+    color: #888;
+    margin-top: 4px;
+  }
+
+  /* ===== ホーム画面 ===== */
+  #home-screen { display: block; }
+
+  .home-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    padding: 16px 20px 40px;
+  }
+
+  .parent-card {
+    background: white;
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    width: 300px;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    text-decoration: none;
+    display: block;
+    color: inherit;
+  }
+  .parent-card:hover { transform: translateY(-4px); box-shadow: 0 8px 28px rgba(0,0,0,0.15); }
+
+  .parent-card.dad { border-top: 6px solid var(--dad-color); }
+  .parent-card.mom { border-top: 6px solid var(--mom-color); }
+
+  .parent-card .icon { font-size: 56px; margin-bottom: 10px; }
+  .parent-card .name { font-size: 22px; font-weight: 900; margin-bottom: 4px; }
+  .parent-card.dad .name { color: var(--dad-color); }
+  .parent-card.mom .name { color: var(--mom-color); }
+  .parent-card .count { font-size: 13px; color: #999; margin-bottom: 16px; }
+
+  .qr-box { background: white; padding: 10px; border-radius: 12px; display: inline-block; border: 2px dashed #ddd; }
+  .qr-label { font-size: 12px; color: #aaa; margin-top: 8px; }
+
+  .open-btn {
+    display: inline-block;
+    margin-top: 16px;
+    padding: 10px 28px;
+    border-radius: 30px;
+    font-size: 15px;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    color: white;
+    transition: opacity 0.2s;
+  }
+  .open-btn:hover { opacity: 0.85; }
+  .dad .open-btn { background: var(--dad-color); }
+  .mom .open-btn { background: var(--mom-color); }
+
+  /* ===== クーポン画面 ===== */
+  #dad-screen, #mom-screen { display: none; }
+
+  .coupon-header {
+    text-align: center;
+    padding: 20px 16px 8px;
+  }
+  .coupon-header .who { font-size: 13px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; }
+  .coupon-header.dad-theme .who { color: var(--dad-color); }
+  .coupon-header.mom-theme .who { color: var(--mom-color); }
+  .coupon-header .big { font-size: 28px; font-weight: 900; color: #222; }
+  .coupon-header .msg { font-size: 13px; color: #888; margin-top: 4px; }
+
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: white;
+    border: 2px solid #ddd;
+    border-radius: 30px;
+    padding: 8px 18px;
+    font-size: 14px;
+    cursor: pointer;
+    margin: 10px 16px;
+    color: #555;
+    transition: border-color 0.2s;
+  }
+  .back-btn:hover { border-color: #aaa; }
+
+  .coupons-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+    padding: 8px 20px 50px;
+  }
+
+  .coupon {
+    background: white;
+    border-radius: var(--radius);
+    padding: 0;
+    width: 280px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.1);
+    overflow: hidden;
+    position: relative;
+    transition: transform 0.2s;
+  }
+  .coupon:hover { transform: translateY(-3px); }
+
+  .coupon-top {
+    padding: 22px 20px 16px;
+    text-align: center;
+  }
+  .coupon.dad-theme .coupon-top { background: var(--dad-light); }
+  .coupon.mom-theme .coupon-top { background: var(--mom-light); }
+
+  .coupon-emoji { font-size: 48px; display: block; margin-bottom: 8px; }
+  .coupon-name { font-size: 20px; font-weight: 900; color: #222; }
+  .coupon-desc { font-size: 12px; color: #777; margin-top: 4px; }
+
+  /* のこり枚数 */
+  .coupon-bottom {
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 2px dashed #eee;
+  }
+  .remaining-label { font-size: 12px; color: #999; }
+  .remaining-dots { display: flex; gap: 5px; flex-wrap: wrap; }
+  .dot {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 2px solid;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+  }
+  .dot.available { color: white; }
+  .dot.used { background: #eee !important; border-color: #ddd !important; color: #ccc; }
+  .dot.used::after { content: "✕"; font-size: 11px; }
+  .coupon.dad-theme .dot { border-color: var(--dad-color); }
+  .coupon.dad-theme .dot.available { background: var(--dad-color); }
+  .coupon.mom-theme .dot { border-color: var(--mom-color); }
+  .coupon.mom-theme .dot.available { background: var(--mom-color); }
+
+  .use-btn {
+    padding: 9px 16px;
+    border-radius: 20px;
+    border: none;
+    font-size: 13px;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .use-btn:hover { opacity: 0.85; }
+  .use-btn:active { transform: scale(0.95); }
+  .use-btn:disabled { background: #ccc !important; cursor: not-allowed; }
+  .coupon.dad-theme .use-btn { background: var(--dad-color); }
+  .coupon.mom-theme .use-btn { background: var(--mom-color); }
+
+  /* 使用済みバッジ */
+  .used-badge {
+    position: absolute;
+    top: 12px; right: 12px;
+    background: rgba(0,0,0,0.12);
+    color: white;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 3px 8px;
+    border-radius: 20px;
+    display: none;
+  }
+  .all-used .used-badge { display: block; }
+  .all-used .coupon-top { filter: grayscale(40%); }
+
+  /* ===== お祝いアニメーション ===== */
+  .celebrate-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .celebrate-overlay.show { opacity: 1; pointer-events: auto; }
+  .celebrate-box {
+    background: white;
+    border-radius: 28px;
+    padding: 36px 32px;
+    text-align: center;
+    max-width: 320px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+    transform: scale(0.8);
+    transition: transform 0.3s;
+  }
+  .celebrate-overlay.show .celebrate-box { transform: scale(1); }
+  .celebrate-box .big-emoji { font-size: 64px; }
+  .celebrate-box .cel-title { font-size: 22px; font-weight: 900; margin: 12px 0 6px; }
+  .celebrate-box .cel-msg { font-size: 14px; color: #777; }
+  .celebrate-box .cel-close {
+    margin-top: 20px;
+    padding: 10px 32px;
+    border-radius: 30px;
+    border: none;
+    background: linear-gradient(135deg, #ff6f00, #ffa000);
+    color: white;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  /* confetti */
+  .confetti-piece {
+    position: fixed;
+    width: 10px; height: 10px;
+    top: -10px;
+    border-radius: 2px;
+    animation: confettiFall linear forwards;
+    z-index: 201;
+    pointer-events: none;
+  }
+  @keyframes confettiFall {
+    to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+  }
+
+  /* ===== レスポンシブ ===== */
+  @media (max-width: 480px) {
+    .coupon, .parent-card { width: 100%; max-width: 360px; }
+    .page-header .title { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ニュースティッカー -->
+<div class="news-bar">
+  <div class="news-track" id="newsTrack">
+    <span>今週はマッサージ2倍キャンペーン中！</span>
+    <span>おつかい券は期間限定で使えます🛒</span>
+    <span>看病券は風邪のときにぜひ使ってね❤️</span>
+    <span>お手伝い券はいつでも使えます✨</span>
+    <span>1日遊ぶ券は週末にどうぞ🎡</span>
+    <span>ご飯作る券、好きなメニューをリクエストしてね🍳</span>
+  </div>
+</div>
+
+<!-- ===== ホーム画面 ===== -->
+<div id="home-screen">
+  <div class="page-header">
+    <div class="title">🎁 プレゼント券アプリ</div>
+    <div class="subtitle">お父さん・お母さんへ、大好きな気持ちをとどけます💕</div>
+  </div>
+
+  <div class="home-cards">
+    <!-- お父さん -->
+    <div class="parent-card dad" onclick="openPage('dad')">
+      <div class="icon">👨</div>
+      <div class="name">お父さん専用</div>
+      <div class="count">マッサージ券 / おつかい券 / ご飯作る券</div>
+      <div class="qr-box" id="qr-dad"></div>
+      <div class="qr-label">📱 QRコードを読み取ってね</div>
+      <button class="open-btn">ひらく →</button>
+    </div>
+
+    <!-- お母さん -->
+    <div class="parent-card mom" onclick="openPage('mom')">
+      <div class="icon">👩</div>
+      <div class="name">お母さん専用</div>
+      <div class="count">お手伝い券 / 看病券 / 1日遊ぶ券 / マッサージ券</div>
+      <div class="qr-box" id="qr-mom"></div>
+      <div class="qr-label">📱 QRコードを読み取ってね</div>
+      <button class="open-btn">ひらく →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== お父さん画面 ===== -->
+<div id="dad-screen">
+  <button class="back-btn" onclick="goHome()">← もどる</button>
+  <div class="coupon-header dad-theme">
+    <div class="who">👨 お父さん専用ページ</div>
+    <div class="big">プレゼント券 🎟️</div>
+    <div class="msg">使いたいときにボタンを押してね！</div>
+  </div>
+  <div class="coupons-grid" id="dad-coupons"></div>
+</div>
+
+<!-- ===== お母さん画面 ===== -->
+<div id="mom-screen">
+  <button class="back-btn" onclick="goHome()">← もどる</button>
+  <div class="coupon-header mom-theme">
+    <div class="who">👩 お母さん専用ページ</div>
+    <div class="big">プレゼント券 🎟️</div>
+    <div class="msg">使いたいときにボタンを押してね！</div>
+  </div>
+  <div class="coupons-grid" id="mom-coupons"></div>
+</div>
+
+<!-- お祝いポップアップ -->
+<div class="celebrate-overlay" id="celebrateOverlay">
+  <div class="celebrate-box">
+    <div class="big-emoji" id="celEmoji">🎉</div>
+    <div class="cel-title" id="celTitle">使ったよ！</div>
+    <div class="cel-msg" id="celMsg">よかったら使ってね❤️</div>
+    <button class="cel-close" onclick="closeModal()">とじる</button>
+  </div>
+</div>
+
+<script>
+// ===== ★ここだけ変えてね★ Google スプレッドシートのURL =====
+// スプレッドシートを「ウェブに公開」した後、下の2つのURLを書き換える
+// （設定方法は別紙の手順書を見てね）
+const SHEET_NEWS_CSV   = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6dazA6dr8Kvdg88HQMuR3BLIU2_oX3sQFeSjgDjHnI0D_Eo_2tckYXZ8TOLsu5cJBEbq4kEHOiPzw/pub?gid=0&single=true&output=csv'; // ニュースシートのCSV URL
+const SHEET_COUPON_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6dazA6dr8Kvdg88HQMuR3BLIU2_oX3sQFeSjgDjHnI0D_Eo_2tckYXZ8TOLsu5cJBEbq4kEHOiPzw/pub?gid=636459526&single=true&output=csv'; // クーポンシートのCSV URL
+
+// ===== デフォルトデータ（スプレッドシートが読めないときに使う） =====
+const DEFAULT_NEWS = [
+  '今週はマッサージ2倍キャンペーン中！',
+  'おつかい券は期間限定で使えます🛒',
+  '看病券は風邪のときにぜひ使ってね❤️',
+  'お手伝い券はいつでも使えます✨',
+  '1日遊ぶ券は週末にどうぞ🎡',
+  'ご飯作る券、好きなメニューをリクエストしてね🍳',
+];
+
+const DEFAULT_COUPONS = [
+  { id: 'dad_massage', target: 'dad', emoji: '💆', name: 'マッサージ券',  desc: '肩・背中・足など好きなところを',  total: 5 },
+  { id: 'dad_errand',  target: 'dad', emoji: '🛒', name: 'おつかい券',    desc: 'お買い物のおつかいに行きます！',    total: 3 },
+  { id: 'dad_cook',    target: 'dad', emoji: '🍳', name: 'ご飯作る券',    desc: '好きなメニューをリクエストしてね',  total: 3 },
+  { id: 'mom_help',    target: 'mom', emoji: '🧹', name: 'お手伝い券',    desc: '家事や掃除、なんでもお手伝い！',    total: 5 },
+  { id: 'mom_nurse',   target: 'mom', emoji: '🤒', name: '看病券',        desc: '風邪のときそばにいるよ',            total: 3 },
+  { id: 'mom_play',    target: 'mom', emoji: '🎡', name: '1日遊ぶ券',    desc: '好きな場所にいっしょに行くよ',      total: 2 },
+  { id: 'mom_massage', target: 'mom', emoji: '💆', name: 'マッサージ券',  desc: '足・肩・背中、ゆっくりほぐすよ',   total: 5 },
+];
+
+// ===== 現在使われているデータ（読み込み後にここに入る） =====
+let DATA = { dad: [], mom: [] };
+
+// ===== CSV読み込みユーティリティ =====
+function parseCSV(text) {
+  // \r\n / \r / \n すべてに対応
+  return text.trim().split(/\r?\n|\r/)
+    .map(line => line.split(',').map(cell => cell.trim().replace(/^"|"$/g, '')))
+    .filter(row => row.some(cell => cell !== ''));
+}
+
+async function fetchCSV(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('fetch failed: ' + res.status);
+  return await res.text();
+}
+
+// ===== スプレッドシートからデータを読み込む =====
+async function loadFromSheet() {
+  let newsItems = DEFAULT_NEWS;
+  let coupons   = DEFAULT_COUPONS;
+
+  if (SHEET_NEWS_CSV && SHEET_COUPON_CSV) {
+    try {
+      const [newsText, couponText] = await Promise.all([
+        fetchCSV(SHEET_NEWS_CSV),
+        fetchCSV(SHEET_COUPON_CSV),
+      ]);
+
+      // ニュース：1列目（1行目ヘッダーをスキップ）
+      const newsRows = parseCSV(newsText).slice(1).map(r => r[0]).filter(Boolean);
+      if (newsRows.length > 0) newsItems = newsRows;
+
+      // クーポン（1行目ヘッダーをスキップ）
+      const couponRows = parseCSV(couponText).slice(1).filter(r => r[0]);
+      if (couponRows.length > 0) {
+        const parsed = couponRows.map((r, i) => ({
+          id:     r[0].replace(/\s/g,'') + '_' + i,
+          target: r[0].trim().toLowerCase(),   // dad / mom
+          emoji:  r[1] || '🎟️',
+          name:   r[2] || 'クーポン',
+          desc:   r[3] || '',
+          total:  parseInt(r[4]) || 3,
+        }));
+        // dad / mom のどちらかでもデータがあれば採用
+        const hasDad = parsed.some(c => c.target === 'dad');
+        const hasMom = parsed.some(c => c.target === 'mom');
+        if (hasDad || hasMom) coupons = parsed;
+      }
+      console.log('スプレッドシートから読み込み完了');
+    } catch (e) {
+      console.warn('スプレッドシート読み込み失敗、デフォルトを使用:', e);
+    }
+  }
+
+  // DATA に振り分け（空なら DEFAULT_COUPONS の同グループで補完）
+  DATA.dad = coupons.filter(c => c.target === 'dad');
+  DATA.mom = coupons.filter(c => c.target === 'mom');
+  if (DATA.dad.length === 0) DATA.dad = DEFAULT_COUPONS.filter(c => c.target === 'dad');
+  if (DATA.mom.length === 0) DATA.mom = DEFAULT_COUPONS.filter(c => c.target === 'mom');
+
+  applyNews(newsItems);
+}
+
+// ===== ニュースをHTMLに反映 =====
+function applyNews(items) {
+  const track = document.getElementById('newsTrack');
+  track.innerHTML = items.map(t => `<span>${t}</span>`).join('') ;
+  // 2ループ分にして途切れなくスクロール
+  track.innerHTML += track.innerHTML;
+}
+
+// ===== ローカルストレージで残枚数管理 =====
+function loadState(id, total) {
+  const saved = localStorage.getItem('coupon_' + id);
+  if (saved !== null) return parseInt(saved);
+  return total;
+}
+function saveState(id, remaining) {
+  localStorage.setItem('coupon_' + id, remaining);
+}
+
+// ===== クーポンカード生成 =====
+function buildCoupons(parent) {
+  const grid = document.getElementById(parent + '-coupons');
+  grid.innerHTML = '';
+  const theme = parent + '-theme';
+
+  DATA[parent].forEach(c => {
+    let remaining = loadState(c.id, c.total);
+
+    const card = document.createElement('div');
+    card.className = 'coupon ' + theme + (remaining === 0 ? ' all-used' : '');
+    card.id = 'card-' + c.id;
+
+    // ドット生成
+    let dotsHtml = '';
+    for (let i = 0; i < c.total; i++) {
+      const cls = i < remaining ? 'dot available' : 'dot used';
+      dotsHtml += `<span class="${cls}" title="${i < remaining ? '使える' : '使い済み'}"></span>`;
+    }
+
+    card.innerHTML = `
+      <div class="coupon-top">
+        <span class="coupon-emoji">${c.emoji}</span>
+        <div class="coupon-name">${c.name}</div>
+        <div class="coupon-desc">${c.desc}</div>
+        <div class="used-badge">すべて使用済み</div>
+      </div>
+      <div class="coupon-bottom">
+        <div>
+          <div class="remaining-label">のこり ${remaining} / ${c.total}</div>
+          <div class="remaining-dots">${dotsHtml}</div>
+        </div>
+        <button class="use-btn" ${remaining === 0 ? 'disabled' : ''}
+          onclick="useCoupon('${c.id}', ${c.total}, '${c.name}', '${c.emoji}', '${parent}')">
+          つかう！
+        </button>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+// ===== 使うボタン =====
+function useCoupon(id, total, name, emoji, parent) {
+  let remaining = loadState(id, total);
+  if (remaining <= 0) return;
+  remaining--;
+  saveState(id, remaining);
+  buildCoupons(parent);
+
+  // お祝い表示
+  const msgs = remaining === 0
+    ? ['全部つかったよ！ありがとう❤️', 'またつかってね！']
+    : [`のこり ${remaining} 枚だよ！`, 'よかったら使ってね❤️'];
+  showModal(emoji, name + ' を使いました！', msgs[0] + '\n' + msgs[1]);
+  launchConfetti();
+}
+
+// ===== モーダル =====
+function showModal(emoji, title, msg) {
+  document.getElementById('celEmoji').textContent = emoji;
+  document.getElementById('celTitle').textContent = title;
+  document.getElementById('celMsg').textContent = msg;
+  document.getElementById('celebrateOverlay').classList.add('show');
+}
+function closeModal() {
+  document.getElementById('celebrateOverlay').classList.remove('show');
+}
+
+// ===== 紙吹雪 =====
+function launchConfetti() {
+  const colors = ['#ff6f00','#ffd600','#2979ff','#e91e8c','#00c853','#ff4081'];
+  for (let i = 0; i < 40; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.left = Math.random() * 100 + 'vw';
+    el.style.background = colors[Math.floor(Math.random() * colors.length)];
+    el.style.animationDuration = (1.2 + Math.random() * 1.5) + 's';
+    el.style.animationDelay = Math.random() * 0.5 + 's';
+    document.body.appendChild(el);
+    el.addEventListener('animationend', () => el.remove());
+  }
+}
+
+// ===== ページ切り替え =====
+function safeReplaceState(url) {
+  try { history.replaceState(null, '', url); } catch(e) { /* file:// では無視 */ }
+}
+
+function openPage(parent) {
+  document.getElementById('home-screen').style.display = 'none';
+  document.getElementById('dad-screen').style.display = parent === 'dad' ? 'block' : 'none';
+  document.getElementById('mom-screen').style.display = parent === 'mom' ? 'block' : 'none';
+  buildCoupons(parent);
+  safeReplaceState('?for=' + parent);
+}
+
+function goHome() {
+  document.getElementById('home-screen').style.display = 'block';
+  document.getElementById('dad-screen').style.display = 'none';
+  document.getElementById('mom-screen').style.display = 'none';
+  safeReplaceState(location.pathname);
+}
+
+// ===== QRコード生成 =====
+function makeQR(id, url) {
+  new QRCode(document.getElementById(id), {
+    text: url,
+    width: 140, height: 140,
+    colorDark: '#333333',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+}
+
+// ===== 初期化 =====
+window.addEventListener('DOMContentLoaded', async () => {
+  // スプレッドシートからデータ読み込み（失敗時はデフォルト使用）
+  await loadFromSheet();
+
+  // QRコード
+  const base = location.href.split('?')[0];
+  makeQR('qr-dad', base + '?for=dad');
+  makeQR('qr-mom', base + '?for=mom');
+
+  // URLパラメータで直接飛ぶ
+  const params = new URLSearchParams(location.search);
+  const target = params.get('for');
+  if (target === 'dad' || target === 'mom') {
+    openPage(target);
+  }
+});
+</script>
+</body>
+</html>
